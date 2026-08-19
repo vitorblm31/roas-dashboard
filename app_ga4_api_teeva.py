@@ -41,8 +41,9 @@ st.set_page_config(page_title="Dashboard GA4 API - Teeva Official", layout="wide
 # --- BARRA LATERAL (SIDEBAR) ---
 st.sidebar.title("📊 Teeva Official")
 st.sidebar.markdown("---")
-st.sidebar.header("Filtros")
 
+# Filtro de Data
+st.sidebar.header("Filtros de Data")
 date_filter = st.sidebar.selectbox("Período", ["Últimos 7 dias", "Últimos 28 dias", "Último Ano", "Personalizado"])
 
 if date_filter == "Últimos 7 dias": start_date, end_date = "7daysAgo", "today"
@@ -81,10 +82,24 @@ df = fetch_ga4_data(start_date, end_date)
 
 if not df.empty:
     df = df[~((df['Custo'] == 0) & (df['Receita'] == 0))]
+    
+    # --- BARRA DE DIVISÃO E TIPO DE VISÃO ---
+    st.sidebar.markdown("---")
+    st.sidebar.header("Tipo de Visão")
+    visao = st.sidebar.radio("Selecione o escopo:", ["Visão Geral", "Mídia Paga"])
+    
+    if visao == "Mídia Paga":
+        df = df[df['Custo'] > 0]
+        if df.empty:
+            st.info("Nenhuma campanha com custo registrada neste período.")
+            st.stop()
+
     df['ROAS_num'] = np.where(df['Custo'] > 0, df['Receita'] / df['Custo'], np.nan)
     df['ROAS_num'] = df['ROAS_num'].round(2)
 
-    # --- FILTRO DE CAMPANHA REINSERIDO ---
+    # --- BARRA DE DIVISÃO E FILTRO DE CAMPANHA ---
+    st.sidebar.markdown("---")
+    st.sidebar.header("Filtro de Campanha")
     campanhas_lista = ["Todas"] + sorted(df['Campanha'].unique().tolist())
     campanha_selecionada = st.sidebar.selectbox("Filtrar Campanha", campanhas_lista)
     
