@@ -19,7 +19,8 @@ def setup_credentials():
     try:
         # Tenta carregar dos Secrets do Streamlit (Nuvem)
         if "GCP_CREDENTIALS" in st.secrets:
-            creds_json = json.loads(st.secrets["GCP_CREDENTIALS"])
+            # strict=False permite que o JSON aceite quebras de linha na chave privada
+            creds_json = json.loads(st.secrets["GCP_CREDENTIALS"], strict=False)
             with open("credenciais.json", "w") as f:
                 json.dump(creds_json, f)
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credenciais.json"
@@ -29,7 +30,7 @@ def setup_credentials():
             if os.path.exists(caminho_local):
                 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = caminho_local
             else:
-                st.error("⚠️ Erro: Credenciais não encontradas. Configure o campo 'GCP_CREDENTIALS' nos Secrets do Streamlit.")
+                st.error("⚠️ Erro: Credenciais não encontradas nos Secrets do Streamlit.")
                 st.stop()
     except Exception as e:
         st.error(f"Erro na configuração das credenciais: {e}")
