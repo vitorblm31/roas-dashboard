@@ -17,20 +17,17 @@ from google.analytics.data_v1beta.types import (
 # ==========================================
 def setup_credentials():
     try:
-        # Tenta carregar dos Secrets do Streamlit (Nuvem)
         if "GCP_CREDENTIALS" in st.secrets:
-            # strict=False permite que o JSON aceite quebras de linha na chave privada
             creds_json = json.loads(st.secrets["GCP_CREDENTIALS"], strict=False)
             with open("credenciais.json", "w") as f:
                 json.dump(creds_json, f)
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credenciais.json"
         else:
-            # Fallback para local (apenas se rodar no seu PC)
             caminho_local = r"C:\Users\conta\Downloads\teeva-dashboard-analytics-8c52596374b1.json"
             if os.path.exists(caminho_local):
                 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = caminho_local
             else:
-                st.error("⚠️ Erro: Credenciais não encontradas nos Secrets do Streamlit.")
+                st.error("⚠️ Erro: Credenciais não encontradas nos Secrets.")
                 st.stop()
     except Exception as e:
         st.error(f"Erro na configuração das credenciais: {e}")
@@ -39,15 +36,14 @@ def setup_credentials():
 setup_credentials()
 PROPERTY_ID = "332122962"
 
-# Configuração da Página
 st.set_page_config(page_title="Dashboard GA4 API - Teeva Official", layout="wide", page_icon="📊")
 
 # --- BARRA LATERAL (SIDEBAR) ---
 st.sidebar.title("📊 Teeva Official")
 st.sidebar.markdown("---")
-st.sidebar.header("Filtros de Data")
+st.sidebar.header("Filtros")
 
-date_filter = st.sidebar.selectbox("Selecione o intervalo", ["Últimos 7 dias", "Últimos 28 dias", "Último Ano", "Personalizado"])
+date_filter = st.sidebar.selectbox("Período", ["Últimos 7 dias", "Últimos 28 dias", "Último Ano", "Personalizado"])
 
 if date_filter == "Últimos 7 dias": start_date, end_date = "7daysAgo", "today"
 elif date_filter == "Últimos 28 dias": start_date, end_date = "28daysAgo", "today"
@@ -87,6 +83,13 @@ if not df.empty:
     df = df[~((df['Custo'] == 0) & (df['Receita'] == 0))]
     df['ROAS_num'] = np.where(df['Custo'] > 0, df['Receita'] / df['Custo'], np.nan)
     df['ROAS_num'] = df['ROAS_num'].round(2)
+
+    # --- FILTRO DE CAMPANHA REINSERIDO ---
+    campanhas_lista = ["Todas"] + sorted(df['Campanha'].unique().tolist())
+    campanha_selecionada = st.sidebar.selectbox("Filtrar Campanha", campanhas_lista)
+    
+    if campanha_selecionada != "Todas":
+        df = df[df['Campanha'] == campanha_selecionada]
 
     df_filtered = df.sort_values(by="ROAS_num", ascending=False, na_position='last')
 
